@@ -1,0 +1,23 @@
+{
+	"name": "wellness-ia",
+	"version": "1.0.0",
+	"description": "Plataforma de avaliação e análise de dados de exercícios e testes",
+	"private": true,
+	"workspaces": [
+		"packages/*"
+	],
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev:backend": "npm run start -w backend",
+		"dev:frontend": "npm run start -w frontend",
+		"dev": "npm run dev:backend & npm run dev:frontend"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs",
+	"devDependencies": {
+		"@biomejs/biome": "2.1.2"
+	}
+}
