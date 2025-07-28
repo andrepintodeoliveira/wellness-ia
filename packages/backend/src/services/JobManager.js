@@ -1,9 +1,9 @@
-// TPhysio-Analyzer-Backend/src/services/JobManager.js
-import { getTrainingAnalysis } from "./geminiService.js";
+// packages/backend/src/services/JobManager.js
+
 import { enrichTrainingData } from "./enrichmentService.js";
+import { getTrainingAnalysis } from "./geminiService.js";
 
 // Usaremos um Map para armazenar os jobs em memória.
-// Em uma aplicação de produção maior, isso seria substituído por um banco de dados como Redis.
 const jobs = new Map();
 
 export const jobManager = {
@@ -17,7 +17,7 @@ export const jobManager = {
 			id: jobId,
 			status: "iniciando",
 			progress: 0,
-			message: "Job iniciado. Aguardando processamento...",
+			message: "Job criado. Preparando para iniciar a análise...",
 			result: null,
 			error: null,
 			isCancelled: false, // Flag para controle de cancelamento
@@ -50,8 +50,6 @@ export const jobManager = {
 			job.status = "cancelado";
 			job.message = "Job cancelado pelo usuário.";
 			console.log(`[JOB CANCELADO] Job ${jobId} foi cancelado.`);
-			// Em uma implementação mais complexa, poderíamos usar AbortController aqui.
-			// Por enquanto, o processo irá parar na próxima verificação do `isCancelled`.
 		}
 	},
 };
@@ -66,40 +64,38 @@ async function processJob(jobId, initialData) {
 	if (!job) return;
 
 	try {
-		// ETAPA 1: Enriquecimento de Dados
-		job.status = "processando";
-		job.progress = 10;
-		job.message = "Iniciando enriquecimento de dados (clima e elevação)...";
+		job.progress = 5;
+		job.message = "Iniciando processo de análise...";
 
-		// Modificamos a chamada para passar o job, para que ele possa ser cancelado
+		// ETAPA 1: Enriquecimento de Dados
 		const { enrichedTimeSeries, weatherInfo } = await enrichTrainingData(
 			initialData.trainingData.timeSeries,
-			job,
+			job, // Passa o job para que ele possa ser atualizado internamente
 		);
-		if (job.isCancelled) return; // Verifica se foi cancelado durante o enriquecimento
+		if (job.isCancelled) return;
 
 		initialData.trainingData.timeSeries = enrichedTimeSeries;
 		initialData.formData.context.weatherInfo = weatherInfo;
-
-		job.progress = 60;
-		job.message = "Dados enriquecidos. Solicitando análise da IA...";
 
 		// ETAPA 2: Análise do Gemini
 		const analysisResult = await getTrainingAnalysis(
 			initialData.formData,
 			initialData.trainingData,
+			job, // Passa o job para a próxima etapa
 		);
-		if (job.isCancelled) return; // Verifica se foi cancelado
+		if (job.isCancelled) return;
 
+		// ETAPA 3: Salvar o resultado completo
 		job.progress = 100;
 		job.status = "concluido";
 		job.message = "Análise concluída com sucesso!";
+
 		job.result = {
-			// Armazena o payload final
 			analysisText: analysisResult.analysisText,
-			decouplingChartData: analysisResult.decouplingChartData,
+			keyMetrics: analysisResult.advancedMetrics,
 			enrichedTimeSeries: initialData.trainingData.timeSeries,
 			weatherInfo: weatherInfo,
+			summary: initialData.trainingData.summary,
 		};
 
 		console.log(`[JOB CONCLUÍDO] Job ${jobId} finalizado com sucesso.`);

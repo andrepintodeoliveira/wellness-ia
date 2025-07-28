@@ -59,3 +59,30 @@ export interface TrainingData {
 	};
 	timeSeries: UnifiedDataPoint[];
 }
+
+/**
+ * Representa o objeto de métricas chave calculado pelo backend.
+ */
+export interface AnalysisKeyMetrics {
+	pacingStrategy: string;
+	decoupling: {
+		trend: { name: string; "Fator de Eficiência": number }[];
+		overall: string;
+	};
+	strideLength: {
+		trend: string[];
+		overall: string;
+	};
+	cadence: {
+		trend: string[];
+		overall: string;
+	};
+	zoneDistribution:
+		| {
+				zone: string;
+				percentage: string;
+				time: string;
+		  }[]
+		| null;
+	isCadenceEstimated: boolean;
+}

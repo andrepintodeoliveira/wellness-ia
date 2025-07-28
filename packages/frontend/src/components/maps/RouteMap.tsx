@@ -12,7 +12,7 @@ import { ZoneDistribution } from "@/components/data/ZoneDistribution";
 import { KeyMetricsDisplay } from "@/components/data/KeyMetricsDisplay";
 import { HeartRateChart } from "@/components/charts/HeartRateChart";
 import { PaceChart } from "@/components/charts/PaceChart";
-import { RouteMap } from "@/components/maps/RouteMap";
+// import { RouteMap } from "@/components/maps/RouteMap"; // <-- TEMPORARIAMENTE REMOVIDO
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ResultsPage() {
@@ -73,7 +73,8 @@ export function ResultsPage() {
 
 					<main className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 						<div className="lg:col-span-3 flex flex-col gap-6">
-							{/* <RouteMap timeSeries={enrichedTimeSeries} /> */}
+							{/* <RouteMap timeSeries={enrichedTimeSeries} /> */}{" "}
+							{/* <-- TEMPORARIAMENTE REMOVIDO */}
 							<HeartRateChart
 								timeSeries={enrichedTimeSeries}
 								profile={profile}
@@ -86,10 +87,7 @@ export function ResultsPage() {
 								zoneData={keyMetrics.zoneDistribution}
 								title="Zonas de Frequência Cardíaca"
 							/>
-							<KeyMetricsDisplay
-								metrics={keyMetrics}
-								summary={analysisResult.summary}
-							/>
+							<KeyMetricsDisplay metrics={keyMetrics} />
 						</div>
 					</main>
 

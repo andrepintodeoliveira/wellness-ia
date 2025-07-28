@@ -64,7 +64,7 @@
 
      *   **Terminal 1 (Backend):**
          ```bash
-         npm run dev --workspace=backend
+         npm run start --workspace=backend
          ```
 
      *   **Terminal 2 (Frontend):**

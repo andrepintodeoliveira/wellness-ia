@@ -1,4 +1,5 @@
-// src/utils/parsers.ts
+// packages/frontend/src/utils/parsers.ts
+
 import Papa from "papaparse";
 import { TrainingData, UnifiedDataPoint } from "@/lib/types";
 
@@ -19,7 +20,6 @@ function durationToSeconds(timeStr: string): number {
 	return parts[0] || 0;
 }
 
-// NOVA FUNÇÃO
 /**
  * Analisa um arquivo .csv da Polar e extrai APENAS a data/hora de início.
  * @param csvFile O arquivo .csv a ser analisado.
@@ -28,7 +28,6 @@ function durationToSeconds(timeStr: string): number {
 export const parseCSVStartTime = (csvFile: File): Promise<number> => {
 	return new Promise((resolve, reject) => {
 		Papa.parse<string[]>(csvFile, {
-			// Pede ao Papaparse para ler apenas as 2 primeiras linhas para eficiência
 			preview: 2,
 			complete: (results) => {
 				try {
@@ -42,8 +41,6 @@ export const parseCSVStartTime = (csvFile: File): Promise<number> => {
 					}
 
 					const [day, month, year] = values[dateIndex].split("-");
-					// IMPORTANTE: Ao criar a data, não especificamos o fuso. O JS usará o fuso do navegador.
-					// Isso espelha o comportamento do timestamp relativo e nos permite comparar.
 					const localDateStr = `${year}-${month}-${day}T${values[timeIndex]}`;
 					resolve(new Date(localDateStr).getTime());
 				} catch (error) {
@@ -86,9 +83,6 @@ export const parseCSV = (csvFile: File): Promise<TrainingData> => {
 					const isoDateStr = `${year}-${month}-${day}T${startTimeStr}Z`;
 					const startTime = new Date(isoDateStr).getTime();
 
-					// CORREÇÃO: Removida a atribuição de 'maxHeartRate' daqui.
-					// O campo 'HR max' no CSV refere-se ao perfil do usuário, não ao máximo da sessão.
-					// O máximo da sessão será obtido do arquivo TCX, que é mais confiável para isso.
 					const summary: TrainingData["summary"] = {
 						totalDistanceMeters:
 							parseFloat(getSummaryValue("Total distance (km)") || "0") * 1000,
@@ -126,24 +120,21 @@ export const parseCSV = (csvFile: File): Promise<TrainingData> => {
 							);
 							const timestamp = startTime + timeOffsetSeconds * 1000;
 
+							const hrStr = getSeriesValue(row, "HR (bpm)");
+							const speedStr = getSeriesValue(row, "Speed (km/h)");
+							const distStr = getSeriesValue(row, "Distances (m)");
+							const altStr = getSeriesValue(row, "Altitude (m)");
+							const powerStr = getSeriesValue(row, "Power (W)");
+							const cadenceStr = getSeriesValue(row, "Cadence");
+
 							return {
 								timestamp: timestamp,
-								heartRate:
-									parseInt(getSeriesValue(row, "HR (bpm)") || "0") || undefined,
-								speed:
-									parseFloat(getSeriesValue(row, "Speed (km/h)") || "0") / 3.6,
-								distance:
-									parseFloat(getSeriesValue(row, "Distances (m)") || "0") ||
-									undefined,
-								altitude:
-									parseFloat(getSeriesValue(row, "Altitude (m)") || "0") ||
-									undefined,
-								power:
-									parseFloat(getSeriesValue(row, "Power (W)") || "0") ||
-									undefined,
-								cadence:
-									parseInt(getSeriesValue(row, "Cadence") || "0") * 2 ||
-									undefined,
+								heartRate: hrStr ? parseInt(hrStr, 10) : undefined,
+								speed: speedStr ? parseFloat(speedStr) / 3.6 : undefined,
+								distance: distStr ? parseFloat(distStr) : undefined,
+								altitude: altStr ? parseFloat(altStr) : undefined,
+								power: powerStr ? parseFloat(powerStr) : undefined,
+								cadence: cadenceStr ? parseInt(cadenceStr, 10) * 2 : undefined,
 							};
 						})
 						.filter((point): point is UnifiedDataPoint => point !== null);
@@ -214,6 +205,7 @@ export const parseTCX = (tcxFile: File): Promise<Partial<TrainingData>> => {
 						dataPoint.distance = parseFloat(distEl.textContent);
 					if (speedEl?.textContent)
 						dataPoint.speed = parseFloat(speedEl.textContent);
+					// TCX RunCadence já é SPM (total), não precisa multiplicar
 					if (cadenceEl?.textContent)
 						dataPoint.cadence = parseInt(cadenceEl.textContent, 10);
 
@@ -227,7 +219,7 @@ export const parseTCX = (tcxFile: File): Promise<Partial<TrainingData>> => {
 					const distance = lap.querySelector("DistanceMeters");
 					const calories = lap.querySelector("Calories");
 					const avgHr = lap.querySelector("AverageHeartRateBpm > Value");
-					const maxHr = lap.querySelector("MaximumHeartRateBpm > Value"); // <-- Fonte correta
+					const maxHr = lap.querySelector("MaximumHeartRateBpm > Value");
 					const maxSpeed = lap.querySelector("MaximumSpeed");
 					const avgSpeed = lap.querySelector("Extensions > LX > AvgSpeed");
 
@@ -240,7 +232,7 @@ export const parseTCX = (tcxFile: File): Promise<Partial<TrainingData>> => {
 					if (avgHr?.textContent)
 						summary.avgHeartRate = parseInt(avgHr.textContent, 10);
 					if (maxHr?.textContent)
-						summary.maxHeartRate = parseInt(maxHr.textContent, 10); // <-- Correto
+						summary.maxHeartRate = parseInt(maxHr.textContent, 10);
 					if (maxSpeed?.textContent)
 						summary.maxSpeed = parseFloat(maxSpeed.textContent);
 					if (avgSpeed?.textContent)
@@ -303,7 +295,7 @@ export const parseGPX = (gpxFile: File): Promise<Partial<TrainingData>> => {
 
 					const hrEl = point.querySelector(
 						"extensions hr, extensions heartrate",
-					); // Seletor mais genérico
+					);
 					if (hrEl?.textContent)
 						dataPoint.heartRate = parseInt(hrEl.textContent, 10);
 
