@@ -1,4 +1,4 @@
-// src/types.ts
+// packages/frontend/src/lib/types.ts
 
 /**
  * Perfil do atleta. Campos que podem estar vazios são tipados como `| null`.
@@ -27,12 +27,11 @@ export interface TrainingContext {
 }
 
 /**
-
  * Representa um único ponto de dados no tempo, após a unificação.
  * Todas as unidades são padronizadas para o S.I. (metros, segundos).
  */
 export interface UnifiedDataPoint {
-	timestamp: number; // Unix timestamp em milissegundos
+	timestamp: number;
 	latitude?: number;
 	longitude?: number;
 	distance?: number;
@@ -41,22 +40,28 @@ export interface UnifiedDataPoint {
 	cadence?: number;
 	power?: number;
 	altitude?: number;
+	grade?: number;
 }
+
+/**
+ * Estrutura para os dados de sumário de um treino.
+ */
+export type TrainingSummary = {
+	totalTimeSeconds: number;
+	totalDistanceMeters: number;
+	calories: number;
+	avgSpeed?: number;
+	maxSpeed?: number;
+	avgHeartRate?: number;
+	maxHeartRate?: number;
+	vo2max?: number;
+};
 
 /**
  * Estrutura de dados que armazena todos os dados de um treino.
  */
 export interface TrainingData {
-	summary: {
-		totalTimeSeconds?: number;
-		totalDistanceMeters?: number;
-		calories?: number;
-		avgSpeed?: number;
-		maxSpeed?: number;
-		avgHeartRate?: number;
-		maxHeartRate?: number;
-		vo2max?: number;
-	};
+	summary: TrainingSummary;
 	timeSeries: UnifiedDataPoint[];
 }
 
@@ -82,7 +87,14 @@ export interface AnalysisKeyMetrics {
 				zone: string;
 				percentage: string;
 				time: string;
+				minBpm: number; // NOVO CAMPO
+				maxBpm: number; // NOVO CAMPO
 		  }[]
 		| null;
 	isCadenceEstimated: boolean;
+	elevation: {
+		gain: number;
+		loss: number;
+	} | null;
+	trainingLoad: number | null;
 }

@@ -12,10 +12,13 @@ const zoneColors = [
 	"bg-red-500",
 ];
 
+// Atualiza a interface local para incluir os novos dados
 interface ZoneData {
 	zone: string;
 	percentage: string;
 	time: string;
+	minBpm: number;
+	maxBpm: number;
 }
 
 interface ZoneDistributionProps {
@@ -51,7 +54,7 @@ export function ZoneDistribution({ zoneData, title }: ZoneDistributionProps) {
 					const originalIndex = 4 - index;
 					return (
 						<div key={zone.zone} className="flex items-center text-sm">
-							<div className="w-1/4 flex items-center">
+							<div className="w-2/5 flex items-center">
 								<div
 									className={cn(
 										"w-2 h-4 rounded-sm mr-2",
@@ -59,16 +62,17 @@ export function ZoneDistribution({ zoneData, title }: ZoneDistributionProps) {
 									)}
 								/>
 								<span className="font-semibold">{`Z${originalIndex + 1}`}</span>
+								{/* NOVO TEXTO: Exibe a faixa de BPM */}
+								<span className="text-muted-foreground ml-1">{`(${zone.minBpm}-${zone.maxBpm} bpm)`}</span>
 							</div>
-							<div className="w-1/2 bg-secondary rounded-full h-4 mr-2">
+							<div className="w-2/5 bg-secondary rounded-full h-4 mr-2">
 								<div
 									className={cn("h-4 rounded-full", zoneColors[originalIndex])}
 									style={{ width: `${zone.percentage}%` }}
 								/>
 							</div>
-							<div className="w-1/4 text-right text-muted-foreground">
+							<div className="w-1/5 text-right text-muted-foreground">
 								<span className="font-mono">{`${zone.percentage}%`}</span>
-								<span className="ml-2 font-mono">({zone.time})</span>
 							</div>
 						</div>
 					);

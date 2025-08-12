@@ -1,11 +1,20 @@
 // packages/backend/src/services/metricsService.js
 
+/**
+ * Filtra pontos de uma série temporal garantindo que a propriedade numérica especificada seja válida.
+ * @param {Array<object>} series - A série temporal de pontos.
+ * @param {string} key - A chave da propriedade a ser validada (ex: 'heartRate').
+ * @returns {Array<object>} A série de pontos filtrada.
+ */
 const filterValidPoints = (series, key) =>
 	series.filter(
 		(p) =>
 			p[key] !== null && p[key] !== undefined && !isNaN(p[key]) && p[key] > 0,
 	);
 
+/**
+ * Converte um total de segundos em uma string de tempo MM:SS.
+ */
 const formatSecondsToMMSS = (seconds) => {
 	if (isNaN(seconds)) return "00:00";
 	const m = Math.floor(seconds / 60);
@@ -13,8 +22,15 @@ const formatSecondsToMMSS = (seconds) => {
 	return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 };
 
+/**
+ * Calcula a distribuição de tempo e percentual gastos em cada zona de frequência cardíaca.
+ * @param {Array<object>} timeSeries - A série temporal completa.
+ * @param {object} profile - O perfil do atleta contendo hrMax e hrRest.
+ * @returns {object|null} Um objeto contendo a distribuição e o tempo bruto em zonas, ou null.
+ */
 const calculateZoneDistribution = (timeSeries, profile) => {
 	if (!profile.hrMax || !profile.hrRest || timeSeries.length === 0) return null;
+
 	const hrReserve = profile.hrMax - profile.hrRest;
 	const zonesConfig = [
 		{ name: "Z1 (Leve)", max: 0.6 },
@@ -23,28 +39,44 @@ const calculateZoneDistribution = (timeSeries, profile) => {
 		{ name: "Z4 (Muito Intensa)", max: 0.9 },
 		{ name: "Z5 (Máxima)", max: 1.01 },
 	];
+
 	const zoneBoundaries = zonesConfig.map((z) =>
 		Math.round(profile.hrRest + hrReserve * z.max),
 	);
+
 	const timeInZones = new Array(5).fill(0);
 	const validHrPoints = filterValidPoints(timeSeries, "heartRate");
+
 	for (const point of validHrPoints) {
 		let zoneIndex = zoneBoundaries.findIndex((b) => point.heartRate <= b);
 		if (zoneIndex === -1) zoneIndex = 4;
 		timeInZones[zoneIndex]++;
 	}
+
 	const totalTime = validHrPoints.length;
 	if (totalTime === 0) return null;
+
 	return {
-		distribution: zonesConfig.map((zone, i) => ({
-			zone: zone.name,
-			percentage: ((timeInZones[i] / totalTime) * 100).toFixed(1),
-			time: formatSecondsToMMSS(timeInZones[i]),
-		})),
+		distribution: zonesConfig.map((zone, i) => {
+			const minBpm = i === 0 ? profile.hrRest : zoneBoundaries[i - 1] + 1;
+			const maxBpm = zoneBoundaries[i];
+			return {
+				zone: zone.name,
+				percentage: ((timeInZones[i] / totalTime) * 100).toFixed(1),
+				time: formatSecondsToMMSS(timeInZones[i]),
+				minBpm: minBpm, // NOVO CAMPO
+				maxBpm: maxBpm, // NOVO CAMPO
+			};
+		}),
 		timeInZones,
 	};
 };
 
+/**
+ * Calcula o ganho/perda de elevação e a distribuição do terreno.
+ * @param {Array<object>} timeSeries - A série temporal completa.
+ * @returns {object|null} Um objeto com as métricas de elevação ou null.
+ */
 const calculateElevationMetrics = (timeSeries) => {
 	let elevationGain = 0;
 	let elevationLoss = 0;
@@ -92,6 +124,12 @@ const calculateElevationMetrics = (timeSeries) => {
 	};
 };
 
+/**
+ * Analisa os dados de uma sessão e gera um conjunto rico de KPIs fisiológicos.
+ * @param {Array<object>} timeSeries - A série temporal unificada.
+ * @param {object} profile - O perfil do atleta.
+ * @returns {object} Um objeto contendo todas as métricas avançadas calculadas.
+ */
 export const generateAdvancedMetrics = (timeSeries, profile, job) => {
 	const defaultResult = {
 		pacingStrategy: "Dados insuficientes",
